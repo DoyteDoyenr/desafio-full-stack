@@ -44,6 +44,8 @@
    pnpm start:front
    ```
 
+  O site estará disponível em [http://localhost:3000/](http://localhost:3000/).
+
 ## Com Docker
 
 1. Certifique-se de ter o Docker e o Docker Compose instalados.
@@ -58,6 +60,8 @@
    docker-compose up -d
    ```
 
+  O site estará disponível em [http://localhost:3000/](http://localhost:3000/).
+  
 ## Com Kubernetes
 
 1. Certifique-se de ter o Kubernetes e o kubectl instalados.
@@ -76,3 +80,4 @@
    ```bash
    kubectl delete -f k8s-local/
    ```
+  O site estará disponível em [http://localhost:3000/](http://localhost:3000/).
