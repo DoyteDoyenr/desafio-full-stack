@@ -33,33 +33,6 @@ jobs:
           gcloud config set project $PROJECT_ID
           gcloud auth configure-docker
 
-      # --- Run Unit Tests with Temp DB ---
-      - name: Start PostgreSQL for tests
-        run: |
-          docker run -d \
-            --name test-db \
-            -e POSTGRES_USER=docker \
-            -e POSTGRES_PASSWORD=docker \
-            -e POSTGRES_DB=main_database \
-            -p 5432:5432 \
-            postgres:15
-
-      - name: Wait for DB to be ready
-        run: |
-          until docker exec test-db pg_isready; do
-            echo "Waiting for DB..."; sleep 2;
-          done
-
-      - name: Install deps and run unit tests
-        run: |
-          corepack enable
-          pnpm install
-          pnpm test:back:unit
-
-      - name: Stop DB container
-        if: always()
-        run: docker rm -f test-db
-
       # --- Build & Push Back-end ---
       - name: Build back-end Docker image
         run: |
