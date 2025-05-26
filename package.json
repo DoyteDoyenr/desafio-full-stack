@@ -1,0 +1,29 @@
+{
+  "name": "project-full-stack",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:back": "pnpm --filter back-cogna dev",
+    "dev:front": "pnpm --filter front-cogna dev",
+
+    "start:back": "pnpm --filter back-cogna start",
+    "start:front": "pnpm --filter front-cogna start",
+
+    "generate": "pnpm --filter back-cogna generate",
+
+    "test:back:unit": "pnpm --filter back-cogna test:unit",
+    "test:back:e2e": "pnpm --filter back-cogna test:e2e", 
+
+    "lint:back": "pnpm --filter back-cogna lint",
+    "lint:front": "pnpm --filter front-cogna lint",
+    "lint": "pnpm lint:back && pnpm lint:front",
+
+    "build:back": "pnpm --filter back-cogna build",
+    "build:front": "pnpm --filter front-cogna build",
+    "build": "pnpm build:back && pnpm build:front",
+
+    "docker:build:front": "docker build -t front-end:local -f front-end/Dockerfile .",
+    "docker:build:back": "docker build -t back-end:local -f back-end/Dockerfile .",
+    "docker:build:all": "pnpm docker:build:back && pnpm docker:build:front"
+  }
+}

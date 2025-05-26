@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: back-cogna
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: back-cogna
+  template:
+    metadata:
+      labels:
+        app: back-cogna
+    spec:
+      containers:
+        - name: back-cogna
+          image: gcr.io/cogna-test-460801/back-end:latest
+          ports:
+            - containerPort: 3333
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: DATABASE_URL
+              value: "postgresql://docker:docker@postgres:5432/main_database"
+            - name: JWT_SECRET
+              value: "uma-chave-secreta-top"
+            - name: PORT
+              value: "3333"
+            - name: FRONT_END_URL
+              value: "http://localhost:3000/"
+          command: ["sh", "-c", "pnpm run generate && node dist/server.js"]
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: back-cogna
+spec:
+  selector:
+    app: back-cogna
+  ports:
+    - port: 80
+      targetPort: 3333
+  type: LoadBalancer

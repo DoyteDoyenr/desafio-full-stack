@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: front-cogna
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: front-cogna
+  template:
+    metadata:
+      labels:
+        app: front-cogna
+    spec:
+      containers:
+        - name: front-cogna
+          image: front-end:local
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: BACKEND_API_URL
+              value: "http://back-cogna:3333"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: front-cogna
+spec:
+  selector:
+    app: front-cogna
+  ports:
+    - port: 3000
+      targetPort: 3000
+  type: LoadBalancer

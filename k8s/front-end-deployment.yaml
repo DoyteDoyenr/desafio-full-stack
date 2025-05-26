@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: front-cogna
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: front-cogna
+  template:
+    metadata:
+      labels:
+        app: front-cogna
+    spec:
+      containers:
+        - name: front-cogna
+          image: gcr.io/cogna-test-460801/front-end:latest
+          ports:
+            - containerPort: 3333
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: BACKEND_API_URL
+              value: "http://back-cogna"
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: front-cogna
+spec:
+  selector:
+    app: front-cogna
+  ports:
+    - port: 80
+      targetPort: 3000
+  type: LoadBalancer

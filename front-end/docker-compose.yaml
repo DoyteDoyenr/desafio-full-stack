@@ -1,0 +1,12 @@
+services:
+  front_cogna:
+    image: front-end:local
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - BACKEND_API_URL=http://back_cogna:3333
+    depends_on:
+      - back_cogna
+    restart: on-failure

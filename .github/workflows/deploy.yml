@@ -1,0 +1,115 @@
+name: Build and Deploy to GKE
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GKE_CLUSTER: ${{ secrets.GKE_CLUSTER }}
+  GKE_ZONE: ${{ secrets.GKE_ZONE }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          install_components: 'gke-gcloud-auth-plugin'
+
+      - name: Configure gcloud
+        run: |
+          gcloud config set project $PROJECT_ID
+          gcloud auth configure-docker
+
+      # --- Run Unit Tests with Temp DB ---
+      - name: Start PostgreSQL for tests
+        run: |
+          docker run -d \
+            --name test-db \
+            -e POSTGRES_USER=docker \
+            -e POSTGRES_PASSWORD=docker \
+            -e POSTGRES_DB=main_database \
+            -p 5432:5432 \
+            postgres:15
+
+      - name: Wait for DB to be ready
+        run: |
+          until docker exec test-db pg_isready; do
+            echo "Waiting for DB..."; sleep 2;
+          done
+
+      - name: Install deps and run unit tests
+        run: |
+          corepack enable
+          pnpm install
+          pnpm test:back:unit
+
+      - name: Stop DB container
+        if: always()
+        run: docker rm -f test-db
+
+      # --- Build & Push Back-end ---
+      - name: Build back-end Docker image
+        run: |
+          docker build -t gcr.io/$PROJECT_ID/back-cogna:latest -f back-end/Dockerfile .
+
+      - name: Push back-end image
+        run: |
+          docker push gcr.io/$PROJECT_ID/back-cogna:latest
+
+      # --- Build & Push Front-end ---
+      - name: Build front-end Docker image
+        run: |
+          docker build \
+            -t gcr.io/$PROJECT_ID/front-cogna:latest \
+            -f front-end/Dockerfile \
+            --build-arg BACKEND_API_URL=http://back-cogna .
+
+      - name: Push front-end image
+        run: |
+          docker push gcr.io/$PROJECT_ID/front-cogna:latest
+
+      # --- GKE Deployment ---
+      - name: Get GKE cluster credentials
+        run: |
+          gcloud container clusters get-credentials $GKE_CLUSTER --zone $GKE_ZONE
+
+      - name: Deploy Postgres
+        run: |
+          kubectl apply -f k8s/postgres-deployment.yaml
+          kubectl apply -f k8s/postgres-test-deployment.yaml
+          kubectl rollout status deployment/postgres --timeout=300s
+          kubectl rollout status deployment/postgres-test --timeout=300s
+
+      - name: Deploy Back End
+        run: |
+          kubectl apply -f k8s/back-end-deployment.yaml
+          kubectl set image deployment/back-cogna back-cogna=gcr.io/$PROJECT_ID/back-cogna:latest
+          kubectl rollout status deployment/back-cogna --timeout=300s
+
+      - name: Deploy Front End
+        run: |
+          kubectl apply -f k8s/front-end-deployment.yaml
+          kubectl set image deployment/front-cogna front-cogna=gcr.io/$PROJECT_ID/front-cogna:latest
+          kubectl rollout status deployment/front-cogna --timeout=300s
+
+      - name: Show deployment status
+        run: |
+          echo "=== PODS ==="
+          kubectl get pods
+          echo "=== SERVICES ==="
+          kubectl get services
+          echo "=== DEPLOYMENTS ==="
+          kubectl get deployments

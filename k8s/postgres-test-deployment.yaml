@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-test
+  template:
+    metadata:
+      labels:
+        app: postgres-test
+    spec:
+      containers:
+        - name: postgres-test
+          image: postgres:latest
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: "prisma"
+            - name: POSTGRES_PASSWORD
+              value: "prisma"
+            - name: POSTGRES_DB
+              value: "test_database"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-test
+spec:
+  selector:
+    app: postgres-test
+  ports:
+    - port: 5432
+      targetPort: 5432
